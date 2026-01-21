@@ -4,14 +4,14 @@ interface
 
 uses
   Vcl.Controls, Vcl.ComCtrls, Vcl.StdCtrls, System.SysUtils, System.Classes,
-  Vcl.Dialogs, FireDAC.Comp.Client, data.DB, System.DateUtils,
-  JvToolEdit; // Unit necessária para o TJvDateEdit
+  Vcl.Dialogs, FireDAC.Comp.Client, data.DB, System.DateUtils;
 
 type
-  { Enumeração para a direção da navegação }
+  { Enumeração para facilitar a leitura da direção da navegação }
   TDirecaoMes = (dmAnterior, dmProximo);
 
 { Protótipos das procedures }
+
 procedure textoProgressBar(barra: TProgressBar; texto: TLabel);
 procedure abrirEscala(linha, veiculo, tipo_dia, funcionario, validar: Integer;
   dataInicial, dataFinal: tDate; qry: TFDQuery);
@@ -23,30 +23,52 @@ procedure finalizarMemo(memo: TMemo; contador: Integer; texto: string);
 procedure AlterarMetas(AQuery: TDataSet; const AAmplitude, ADourado: Double);
 procedure HabilitarBotaoPorQuery(AQuery: TFDQuery; AButton: TControl);
 
-{ MÉTODO GENÉRICO PARA JVDateEdit }
-procedure NavegarMes(ADirecao: TDirecaoMes; const ADtInicio, ADtFim: TJvDateEdit);
+{ Métodos de Navegação de Datas (Overloads) }
+
+// Versão 1: Recebe variáveis puras de data (Uso interno ou em relatórios)
+procedure NavegarMes(ADirecao: TDirecaoMes; var ADataInicio, ADataFim: TDate); overload;
+
+// Versão 2: Recebe os componentes diretamente (Uso nos botões de formulários)
+procedure NavegarMes(ADirecao: TDirecaoMes; ADtInicio, ADtFim: TDateTimePicker); overload;
 
 implementation
 
 uses
   udmDados;
 
-procedure NavegarMes(ADirecao: TDirecaoMes; const ADtInicio, ADtFim: TJvDateEdit);
-var
-  LData: TDate;
+{ --- Implementação dos Métodos de Navegação --- }
+
+procedure NavegarMes(ADirecao: TDirecaoMes; var ADataInicio, ADataFim: TDate);
 begin
-  // Extrai a data do componente Jv
-  LData := ADtInicio.Date;
-
   if ADirecao = dmAnterior then
-    LData := IncMonth(LData, -1)
+    ADataInicio := IncMonth(ADataInicio, -1)
   else
-    LData := IncMonth(LData, 1);
+    ADataInicio := IncMonth(ADataInicio, 1);
 
-  // Define o período completo do mês
-  ADtInicio.Date := StartOfAMonth(YearOf(LData), MonthOf(LData));
-  ADtFim.Date    := EndOfAMonth(YearOf(LData), MonthOf(LData));
+  // Define o primeiro dia do novo mês
+  ADataInicio := StartOfAMonth(YearOf(ADataInicio), MonthOf(ADataInicio));
+
+  // Define o último dia do novo mês
+  ADataFim := EndOfAMonth(YearOf(ADataInicio), MonthOf(ADataInicio));
 end;
+
+procedure NavegarMes(ADirecao: TDirecaoMes; ADtInicio, ADtFim: TDateTimePicker);
+var
+  vDataI, vDataF: TDate;
+begin
+  // 1. Extrai as datas dos componentes
+  vDataI := ADtInicio.Date;
+  vDataF := ADtFim.Date;
+
+  // 2. Processa a lógica na Versão 1
+  NavegarMes(ADirecao, vDataI, vDataF);
+
+  // 3. Devolve os novos valores para os componentes na tela
+  ADtInicio.Date := vDataI;
+  ADtFim.Date    := vDataF;
+end;
+
+{ --- Restante das Procedures da Unit --- }
 
 procedure AlterarMetas(AQuery: TDataSet; const AAmplitude, ADourado: Double);
 var
@@ -69,8 +91,7 @@ end;
 
 procedure textoProgressBar(barra: TProgressBar; texto: TLabel);
 begin
-  if (barra.Max - barra.Min) > 0 then
-    texto.Caption := Format('%.0f%%', [(barra.Position - barra.Min) / (barra.Max - barra.Min) * 100]);
+  texto.Caption := Format('%.0f%%', [(barra.Position - barra.Min) / (barra.Max - barra.Min) * 100]);
 end;
 
 procedure iniciarMemo(memo: TMemo);
@@ -84,6 +105,7 @@ procedure finalizarMemo(memo: TMemo; contador: Integer; texto: string);
 begin
   memo.Lines.Add(texto + IntToStr(contador));
   memo.Lines.Add(UpperCase('hora final ' + (formatDateTime('dd|mmm|yy', now)) + '   ' + formatDateTime('ttt', time)));
+  memo.Lines.Add('');
   memo.Lines.Add('');
 end;
 
@@ -127,7 +149,7 @@ end;
 
 procedure formatarEdit(edit: TEdit);
 begin
-  edit.Text := FormatFloat('#.00', StrToFloatDef(edit.Text, 0));
+  edit.Text := FormatFloat('#.00', StrToFloat(edit.Text));
 end;
 
 procedure eventosTeclado(var Key: Word; Shift: TShiftState; campo: string);
@@ -135,15 +157,18 @@ begin
   if (ssAlt in Shift) and (chr(Key) in ['N', 'n']) then
   begin
     var NewString: string := 'Digite senha.';
-    if (InputQuery('Acesso', 'Senha:', NewString)) and (NewString = '5421') then
+    if (InputQuery('Input Box', 'Prompt', NewString)) and (NewString = '5421') then
     begin
       NewString := campo;
-      if InputQuery('Configuração', 'Valor:', NewString) then
+      if InputQuery('Input Box', 'Prompt', NewString) then
       begin
         try
-          dmDados.con.ExecSQL('update parametros set sic=:sic', [StrToInt(NewString)]);
+          if ((StrToInt(NewString) > 45578) and (StrToInt(NewString) < 46000)) then
+            dmDados.con.ExecSQL('update parametros set sic=:sic', [StrToInt(NewString)])
+          else
+            ShowMessage('Valor fora do parâmetro (45600 a 46000)');
         except
-          ShowMessage('Erro ao atualizar');
+          ShowMessage('Valor inválido');
         end;
       end;
     end;

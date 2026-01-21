@@ -3,22 +3,21 @@ unit UExcelService;
 interface
 
 uses
-  System.SysUtils, System.Variants, Data.DB, Winapi.ActiveX, System.Win.ComObj, Vcl.Dialogs, System.Classes;
+  System.SysUtils, System.Variants, Data.DB, Winapi.ActiveX, System.Win.ComObj, Vcl.Dialogs;
 
 type
   TExcelService = class
   private
     class procedure FormatarPlanilhaExcel(const Excel: Variant; const LinhaFinal, ColunaFinal: Integer);
   public
-    { Adicionado parâmetro Observacoes: TStrings }
-    class procedure ExportarDataSet(DataSet: TDataSet; ValorTag: Integer; const TituloCabecalho: string; Observacoes: TStrings = nil);
+    class procedure ExportarDataSet(DataSet: TDataSet; ValorTag: Integer; const TituloCabecalho: string);
   end;
 
 implementation
 
 { TExcelService }
 
-class procedure TExcelService.ExportarDataSet(DataSet: TDataSet; ValorTag: Integer; const TituloCabecalho: string; Observacoes: TStrings = nil);
+class procedure TExcelService.ExportarDataSet(DataSet: TDataSet; ValorTag: Integer; const TituloCabecalho: string);
 var
   Linha, coluna, ColExcel: Integer;
   planilha, Sheet, Dados, vRange: Variant;
@@ -27,8 +26,6 @@ var
   PathImages: string;
   LogoCliente, LogoSic: string;
   PosicaoEsquerdaSic: Double;
-  LinhaRodape: Integer;
-  i: Integer;
 const
   xlCenter = -4108;
 begin
@@ -54,9 +51,9 @@ begin
       if DataSet.Fields[coluna].Tag = ValorTag then
         Inc(UltimaColunaPreenchida);
 
-    // 2. Ajuste de altura das linhas 1 e 2 para as logos
+    // 2. Ajuste de altura das linhas 1 e 2 para as logos (Aumento da moldura)
     Sheet.Rows.Item[1].RowHeight := 25;
-    Sheet.Rows.Item[2].RowHeight := 25;
+    Sheet.Rows.Item[2].RowHeight := 25; // Somadas dão 50 de altura para o cabeçalho
 
     // 3. Preparar Array de Dados
     Dados := VarArrayCreate([1, TotalRegistros + 1, 1, UltimaColunaPreenchida], varVariant);
@@ -94,10 +91,10 @@ begin
     // 4. Despeja os dados
     Sheet.Range[Sheet.Cells[3, 1], Sheet.Cells[3 + TotalRegistros, UltimaColunaPreenchida]].Value := Dados;
 
-    // 5. Formata a Planilha (AutoFit e Estilo de Tabela)
+    // 5. Formata a Planilha (AutoFit)
     FormatarPlanilhaExcel(planilha, 3 + TotalRegistros, UltimaColunaPreenchida);
 
-    // 6. Configura o Título
+    // 6. Configura o Título (Centralizado H e V)
     vRange := Sheet.Range[Sheet.Cells[1, 1], Sheet.Cells[2, UltimaColunaPreenchida]];
     vRange.Merge;
     vRange.Value := TituloCabecalho;
@@ -106,25 +103,12 @@ begin
     vRange.HorizontalAlignment := xlCenter;
     vRange.VerticalAlignment := xlCenter;
 
-    // 7. INSERÇÃO DAS OBSERVAÇÕES (RODAPÉ)
-    if Assigned(Observacoes) and (Observacoes.Count > 0) then
-    begin
-      // Começa 2 linhas abaixo do fim da tabela
-      LinhaRodape := 3 + TotalRegistros + 2;
-
-      for i := 0 to Observacoes.Count - 1 do
-      begin
-        vRange := Sheet.Cells[LinhaRodape + i, 1];
-        vRange.Value := Observacoes[i];
-        vRange.Font.Italic := True;
-        vRange.Font.Color := $00555555; // Cinza escuro
-      end;
-    end;
-
-    // 8. INSERÇÃO DAS LOGOMARCAS
+    // 7. INSERÇÃO DAS LOGOMARCAS (Com ajuste de centralização na altura)
+    // Logo Cliente (Esquerda)
     if FileExists(LogoCliente) then
       Sheet.Shapes.AddPicture(LogoCliente, False, True, 5, 5, 65, 38);
 
+    // Logo SIC (Direita) - Posição recalculada após AutoFit
     if FileExists(LogoSic) then
     begin
       PosicaoEsquerdaSic := Sheet.Cells[1, UltimaColunaPreenchida].Left +
