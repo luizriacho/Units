@@ -1,0 +1,27 @@
+# Binários e Objetos
+*.exe
+*.dll
+*.dcu
+*.bpl
+*.dcp
+*.dres
+*.rsm
+*.fdb
+*.fbk
+
+# Arquivos de Configuração do Usuário
+*.identcache
+*.local
+*.skincfg
+*.dsk
+*.stat
+*.~*
+
+# Pastas de Saída (Build)
+__history/
+__recovery/
+ModelSupport_*/
+Win32/
+Win64/
+Android/
+iOS/
