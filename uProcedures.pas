@@ -5,7 +5,7 @@ interface
 uses
   Vcl.Controls, Vcl.ComCtrls, Vcl.StdCtrls, System.SysUtils, System.Classes,
   Vcl.Dialogs, FireDAC.Comp.Client, data.DB, System.DateUtils,
-  JvToolEdit; // Unit necessária para o TJvDateEdit
+  JvToolEdit, Vcl.DBGrids; // Unit necessária para o TJvDateEdit
 
 type
   { Enumeração para a direção da navegação }
@@ -22,6 +22,7 @@ procedure iniciarMemo(memo: TMemo);
 procedure finalizarMemo(memo: TMemo; contador: Integer; texto: string);
 procedure AlterarMetas(AQuery: TDataSet; const AAmplitude, ADourado: Double);
 procedure HabilitarBotaoPorQuery(AQuery: TFDQuery; AButton: TControl);
+procedure OrdenarGrid(Column: TColumn);
 
 { MÉTODO GENÉRICO PARA JVDateEdit }
 procedure NavegarMes(ADirecao: TDirecaoMes; const ADtInicio, ADtFim: TJvDateEdit);
@@ -149,5 +150,35 @@ begin
     end;
   end;
 end;
+procedure OrdenarGrid(Column: TColumn);
+var
+  vDataset: TDataSet;
+  vFieldName: string;
+begin
+  vDataset := Column.Field.DataSet;
+  vFieldName := Column.FieldName;
 
+  // Verificamos se o DataSet é um FDQuery (Firebird) para usar IndexFieldNames
+  if vDataset is TFDQuery then
+  begin
+    try
+      vDataset.DisableControls; // Melhora a performance visual
+      try
+        if TFDQuery(vDataset).IndexFieldNames = vFieldName then
+        begin
+          TFDQuery(vDataset).IndexFieldNames := vFieldName + ':D';
+        end
+        else
+        begin
+          TFDQuery(vDataset).IndexFieldNames := vFieldName;
+        end;
+        vDataset.First;
+      finally
+        vDataset.EnableControls;
+      end;
+    except
+      ShowMessage('Não foi possível ordenar por este campo.');
+    end;
+  end;
+end;
 end.
