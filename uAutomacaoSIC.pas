@@ -16,6 +16,7 @@ type
       ANomeOperador: string;
       ADesempenho: string;
       AMediaPontuacao: Double;
+      ATotalOcorrencias : Integer;
       ARanking: Integer;
       APeriodoStr: string;
       ADiasDirecao: Integer;
@@ -36,7 +37,7 @@ end;
 
 class procedure TAutomacaoSIC.EnviarRelatorioOperador(
   ANumero: string; ANomeOperador: string; ADesempenho: string;
-  AMediaPontuacao: Double; ARanking: Integer; APeriodoStr: string;
+  AMediaPontuacao: Double;ATotalOcorrencias, ARanking: Integer; APeriodoStr: string;
   ADiasDirecao: Integer; ADataSetDetalhe: TDataSet;
   ACampoPontuacao: string = 'PONTUACAO_MOVIMENTO'
 );
@@ -59,6 +60,7 @@ begin
           '⭐ *Desempenho:* ' + ADesempenho + sLineBreak +
           '📈 *Média Pontuação:* ' + FormatFloat('0.00', AMediaPontuacao) + sLineBreak +
           '☸️ *Dias na Direção:* ' + IntToStr(ADiasDirecao) + ' dias' + sLineBreak +
+          '⚠️ *Total de Ocorrências:* ' + IntToStr(ATotalOcorrencias) + sLineBreak +
           '--------------------------------------------' + sLineBreak +
           '📝 *DETALHE DIÁRIO:*' + sLineBreak +
           // AJUSTE DE ALINHAMENTO: 3 espaços antes da crase para alinhar com o emoji

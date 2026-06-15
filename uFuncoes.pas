@@ -65,7 +65,7 @@ function GetTimeInDateTime(Data: TDateTime): Word;
 function ColocaTextoEsq(Texto: string; Qtd: Integer; Ch: Char): string;
 function ColocaTextoDir(Texto: string; Qtd: Integer; Ch: Char): string;
 procedure conectar(empresa: string);
-//procedure conferirNovatos;
+// procedure conferirNovatos;
 function tipoDia(dData: TDateTime): Integer;
 function textoDireita(sTexto: string; qtde_caract: Integer): string;
 function textoEsquerda(sTexto: string; qtde_caract: Integer): string;
@@ -75,23 +75,32 @@ function retorna_cpf_operador(chave_f: Integer): string;
 function validarData(dImportacao, dParametro: TDate): Boolean;
 function PreencherComChar(const Texto: string; TamanhoTotal: Integer;
   const Caractere: Char): string;
-
-//
-// Retorna uma parte de um texto antes de um caractere especificado
-//
+function ConverterHora(const S: string): string;
 
 implementation
 
 uses uPrincipal, udmDados;
+
+function ConverterHora(const S: string): string;
+var
+  f: double;
+begin
+  // Tenta converter como número decimal do Excel
+  if TryStrToFloat(S, f) then
+    Result := FormatDateTime('hh:nn:ss', f)
+  else
+    // Já está no formato hh:mm ou hh:mm:ss
+    Result := FormatDateTime('hh:nn:ss', StrToTime(S));
+end;
+
 function PreencherComChar(const Texto: string; TamanhoTotal: Integer;
   const Caractere: Char): string;
 begin
   if length(Texto) < TamanhoTotal then
-    result := Texto + StringOfChar(Caractere, TamanhoTotal - length(Texto))
+    Result := Texto + StringOfChar(Caractere, TamanhoTotal - length(Texto))
   else
-    result := copy(Texto, 1, TamanhoTotal);
+    Result := copy(Texto, 1, TamanhoTotal);
 end;
-
 
 function retorna_cpf_operador(chave_f: Integer): string;
 begin
@@ -99,7 +108,6 @@ begin
     ('select substring(f.cpf FROM 1 FOR 6) from funcionario where chave_fun=:chave_fun ',
     [chave_f]);
 end;
-
 
 function validarData(dImportacao, dParametro: TDate): Boolean;
 begin
@@ -109,14 +117,13 @@ begin
     Result := False;
 end;
 
-
 function diretorio: string;
 begin
   if DirectoryExists
     ('G:\Outros computadores\Meu computador (1)\Arquivos Importar\') then
-    result := ('G:\Outros computadores\Meu computador (1)\Arquivos Importar\')
+    Result := ('G:\Outros computadores\Meu computador (1)\Arquivos Importar\')
   else
-    result := ('C:\Arquivos Importar\');
+    Result := ('C:\Arquivos Importar\');
 end;
 
 function usuarioLogado: String;
@@ -128,14 +135,15 @@ begin
   SetLength(user, I);
   Windows.GetUserName(PChar(user), I);
   user := string(PChar(user));
-  result := user;
+  Result := user;
 end;
+
 function textoDireita(sTexto: string; qtde_caract: Integer): string;
 var
   AuxStr: String;
 begin
   AuxStr := sTexto;
-  result := RightStr(AuxStr, qtde_caract); // Irá Copiar a palavra Delphi
+  Result := RightStr(AuxStr, qtde_caract); // Irá Copiar a palavra Delphi
 end;
 
 function textoEsquerda(sTexto: string; qtde_caract: Integer): string;
@@ -143,18 +151,18 @@ var
   AuxStr: String;
 begin
   AuxStr := sTexto;
-  result := LeftStr(AuxStr, qtde_caract); // Irá Copiar a palavra Delphi
+  Result := LeftStr(AuxStr, qtde_caract); // Irá Copiar a palavra Delphi
 end;
 
 function tipoDia(dData: TDateTime): Integer;
 { Verifica se uma data informada cai em dia util, sabado ou domingo }
 begin
   if DayOfWeek(dData) = 7 then
-    result := 2
+    Result := 2
   else if DayOfWeek(dData) = 1 then
-    result := 3
+    Result := 3
   else
-    result := 1;
+    Result := 1;
 end;
 
 function GetTimeInDateTime(Data: TDateTime): Word;
@@ -321,28 +329,28 @@ function ParteTexto(Frase: string): string;
 // Retorna uma parte de um texto antes de um caractere especificado
 //
 var
-  i, Max: Integer;
+  I, Max: Integer;
   buff: string;
 begin
-  i := 1;
+  I := 1;
   buff := '';
   Max := length(' ');
-  while (i <= length(Frase)) and (buff <> ' ') do
+  while (I <= length(Frase)) and (buff <> ' ') do
   begin
-    buff := buff + Frase[i];
-    if i > 12 then
+    buff := buff + Frase[I];
+    if I > 12 then
     begin
       if length(buff) > Max then
       begin
         buff := copy(buff, 2, Max);
       end;
     end;
-    Inc(i);
+    Inc(I);
   end;
   if buff = ' ' then
   begin
-    Result := copy(Frase, 1, i - Max - 1);
-    Frase := copy(Frase, i, length(Frase) + 1 - i);
+    Result := copy(Frase, 1, I - Max - 1);
+    Frase := copy(Frase, I, length(Frase) + 1 - I);
   end
   else
   begin
@@ -442,30 +450,30 @@ end;
 
 function CopyLeft(AString: string; ALength: Integer): string;
 var
-  i: Integer;
+  I: Integer;
 begin
   { Retorna uma SubString da direita para esquerda no tamamnho desejado }
   // substitui pq. no delhpi 5 não tem StrUtils
-  for i := 1 to length(AString) do
-    if i > ALength then
+  for I := 1 to length(AString) do
+    if I > ALength then
       Break
     else
-      Result := Result + AString[i];
+      Result := Result + AString[I];
 end;
 
 { CopyRight }
 
 function CopyRight(AString: string; ALength: Integer): string;
 var
-  i: Integer;
+  I: Integer;
 begin
   { Retorna uma SubString da esquerda para direita no tamamnho desejado }
   // substitui pq. no delhpi 5 não tem StrUtils
-  for i := length(AString) downto 1 do
-    if (length(AString) - i) >= ALength then
+  for I := length(AString) downto 1 do
+    if (length(AString) - I) >= ALength then
       Break
     else
-      Result := AString[i] + Result;
+      Result := AString[I] + Result;
 end;
 
 function RemoveAcento(Str: string): string;
@@ -668,20 +676,20 @@ end;
 
 function Consistencia(Formulario: Tform): Boolean;
 var
-  i: Integer;
+  I: Integer;
   Resposta: Boolean;
   Componente: TEdit;
 begin
   // Inicializa a resposta
   Resposta := False;
   // Executa uma repetição em todos os componentes
-  for i := 0 to Formulario.ComponentCount - 1 do
+  for I := 0 to Formulario.ComponentCount - 1 do
   begin
     // Verifica se o componente é um editBox
-    if Formulario.Components[i] is TEdit then
+    if Formulario.Components[I] is TEdit then
     begin
       // Grava o componente em uma variável
-      Componente := Formulario.Components[i] as TEdit;
+      Componente := Formulario.Components[I] as TEdit;
       // Verifica se o valor está vazio
       if Componente.Text = '' then
       begin
@@ -699,8 +707,6 @@ begin
       end;
   end;
 end;
-
-
 
 function GetStrNumber(const S: string): string;
 var
@@ -884,71 +890,71 @@ begin
 
 end;
 
-//procedure conferirNovatos;
-//begin
-//  with dmDados do
-//  begin
-//    qryMotorista.Close;
-//    qryMotorista.Open;
-////    qryMotoristaDesligado.Close;
-////    qryMotoristaDesligado.Open;
+// procedure conferirNovatos;
+// begin
+// with dmDados do
+// begin
+// qryMotorista.Close;
+// qryMotorista.Open;
+/// /    qryMotoristaDesligado.Close;
+/// /    qryMotoristaDesligado.Open;
 //
-//    if qryMotorista.RecordCount > 0 then
-//    begin
-//      qryMotorista.First;
-//      while not qryMotorista.Eof do
-//      begin
-//        try
-//          qryLocalizaChaveFunc.Close;
-//          qryLocalizaChaveFunc.Params[0].AsInteger :=
-//            qryMotoristaID_FUNCIONARIO.AsInteger;
-//          qryLocalizaChaveFunc.Open;
-//          if qryLocalizaChaveFunc.RecordCount = 0 then
-//          begin
-//            qryInserirMotorista.Params[0].AsInteger :=
-//              qryMotoristaID_FUNCIONARIO.AsInteger;
-//            qryInserirMotorista.Params[1].AsString := qryMotoristaNOME.AsString;
-//            qryInserirMotorista.Params[2].AsInteger :=
-//              qryMotoristaID_CARGO.AsInteger;
-//            qryInserirMotorista.Params[3].AsString := qryMotoristaCPF.AsString;
-//            qryInserirMotorista.Params[4].AsDate :=
-//              qryMotoristaDATA_ADMISSAO.AsDateTime;
-//            qryInserirMotorista.Params[5].AsString :=
-//              qryMotoristaTELEFONE.AsString;
-//            qryInserirMotorista.ExecSQL;
-//            qryInserirMotorista.CommitUpdates;
-//          end;
-//          // end;
-//          qryMotorista.Next;
-//        except
-//          qryMotorista.Next;
-//        end;
-//      end;
-//    end;
-////    if qryMotoristaDesligado.RecordCount > 0 then
-////    begin
-////      qryMotoristaDesligado.First;
-////      while not qryMotoristaDesligado.Eof do
-////      begin
-////        try
-////          con.StartTransaction;
-////          con.ExecSQL
-////            ('update funcionario set data_demissao=:data_demissao,situacao =:sitInativo where chapa =:chapa and situacao =:sitAtivo and chapa > 1',
-////            [qryMotoristaDesligadoDATA_DESLIGAMENTO.AsDateTime, 'N',
-////            qryMotoristaDesligadoID_FUNCIONARIO.AsInteger, 'S']);
-////          con.Commit;
-////          // end;
-////          qryMotoristaDesligado.Next;
-////        except
-////          con.Rollback;
-////          qryMotoristaDesligado.Next;
-////        end;
-////      end;
-//    end;
+// if qryMotorista.RecordCount > 0 then
+// begin
+// qryMotorista.First;
+// while not qryMotorista.Eof do
+// begin
+// try
+// qryLocalizaChaveFunc.Close;
+// qryLocalizaChaveFunc.Params[0].AsInteger :=
+// qryMotoristaID_FUNCIONARIO.AsInteger;
+// qryLocalizaChaveFunc.Open;
+// if qryLocalizaChaveFunc.RecordCount = 0 then
+// begin
+// qryInserirMotorista.Params[0].AsInteger :=
+// qryMotoristaID_FUNCIONARIO.AsInteger;
+// qryInserirMotorista.Params[1].AsString := qryMotoristaNOME.AsString;
+// qryInserirMotorista.Params[2].AsInteger :=
+// qryMotoristaID_CARGO.AsInteger;
+// qryInserirMotorista.Params[3].AsString := qryMotoristaCPF.AsString;
+// qryInserirMotorista.Params[4].AsDate :=
+// qryMotoristaDATA_ADMISSAO.AsDateTime;
+// qryInserirMotorista.Params[5].AsString :=
+// qryMotoristaTELEFONE.AsString;
+// qryInserirMotorista.ExecSQL;
+// qryInserirMotorista.CommitUpdates;
+// end;
+// // end;
+// qryMotorista.Next;
+// except
+// qryMotorista.Next;
+// end;
+// end;
+// end;
+/// /    if qryMotoristaDesligado.RecordCount > 0 then
+/// /    begin
+/// /      qryMotoristaDesligado.First;
+/// /      while not qryMotoristaDesligado.Eof do
+/// /      begin
+/// /        try
+/// /          con.StartTransaction;
+/// /          con.ExecSQL
+/// /            ('update funcionario set data_demissao=:data_demissao,situacao =:sitInativo where chapa =:chapa and situacao =:sitAtivo and chapa > 1',
+/// /            [qryMotoristaDesligadoDATA_DESLIGAMENTO.AsDateTime, 'N',
+/// /            qryMotoristaDesligadoID_FUNCIONARIO.AsInteger, 'S']);
+/// /          con.Commit;
+/// /          // end;
+/// /          qryMotoristaDesligado.Next;
+/// /        except
+/// /          con.Rollback;
+/// /          qryMotoristaDesligado.Next;
+/// /        end;
+/// /      end;
+// end;
 //
-////    qryMotorista.Close;
-////    qryMotoristaDesligado.Close;
-////  end;
-//end;
+/// /    qryMotorista.Close;
+/// /    qryMotoristaDesligado.Close;
+/// /  end;
+// end;
 
 end.
