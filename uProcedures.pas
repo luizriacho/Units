@@ -25,7 +25,8 @@ procedure HabilitarBotaoPorQuery(AQuery: TFDQuery; AButton: TControl);
 procedure OrdenarGrid(Column: TColumn);
 procedure ExtrairDatasRelatorio(const texto: string;
   out dtInicio, dtFim: TDateTime);
-
+procedure ExtrairDatasRelatorioTelemetria(
+  const ATexto: string; out dtInicio, dtFim: TDateTime);
 { MÉTODO GENÉRICO PARA JVDateEdit }
 procedure NavegarMes(ADirecao: TDirecaoMes; const ADtInicio, ADtFim: TJvDateEdit);
 
@@ -33,6 +34,45 @@ implementation
 
 uses
   udmDados;
+procedure ExtrairDatasRelatorioTelemetria(
+  const ATexto: string; out dtInicio, dtFim: TDateTime);
+var
+  posDE, paraPara: Integer;
+  sIni, sFim: string;
+  fs: TFormatSettings;
+
+  function ConverterDataHora(const s: string): TDateTime;
+  var
+    sData, sHora: string;
+    partes: TArray<string>;
+  begin
+    partes := s.Split([' ']);
+    sData := partes[0];
+    if Length(partes) > 1 then
+      sHora := partes[1]
+    else
+      sHora := '00:00';
+    Result := StrToDate(sData, fs) + StrToTime(sHora, fs);
+  end;
+
+begin
+  fs := TFormatSettings.Create('pt-BR');
+  fs.ShortDateFormat := 'dd/mm/yyyy';
+  fs.ShortTimeFormat := 'hh:mm';
+  fs.TimeSeparator := ':';
+  fs.DateSeparator := '/';
+
+  posDE    := Pos('De ', ATexto);
+  paraPara := Pos('Para', ATexto);
+
+  sIni := Trim(Copy(ATexto, posDE + 3, paraPara - (posDE + 3)));
+  sFim := Trim(Copy(ATexto, paraPara + 4, MaxInt));
+  sIni := Trim(Copy(sIni, 1, 16));
+  sFim := Trim(Copy(sFim, 1, 16));
+
+  dtInicio := ConverterDataHora(sIni);
+  dtFim    := ConverterDataHora(sFim);
+end;
 procedure ExtrairDatasRelatorio(const texto: string;
   out dtInicio, dtFim: TDateTime);
 var
