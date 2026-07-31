@@ -1,17 +1,17 @@
-unit uProcedures;
+ï»¿unit uProcedures;
 
 interface
 
 uses
   Vcl.Controls, Vcl.ComCtrls, Vcl.StdCtrls, System.SysUtils, System.Classes,
   Vcl.Dialogs, FireDAC.Comp.Client, data.DB, System.DateUtils,
-  JvToolEdit, Vcl.DBGrids; // Unit necessária para o TJvDateEdit
+  JvToolEdit, Vcl.DBGrids, Vcl.ExtCtrls, Vcl.Buttons; // Unidades Vcl.ExtCtrls e Vcl.Buttons adicionadas
 
 type
-  { Enumeração para a direção da navegação }
+  { EnumeraÃ§Ã£o para a direÃ§Ã£o da navegaÃ§Ã£o }
   TDirecaoMes = (dmAnterior, dmProximo);
 
-{ Protótipos das procedures }
+  { ProtÃ³tipos das procedures }
 procedure textoProgressBar(barra: TProgressBar; texto: TLabel);
 procedure abrirEscala(linha, veiculo, tipo_dia, funcionario, validar: Integer;
   dataInicial, dataFinal: tDate; qry: TFDQuery);
@@ -25,17 +25,28 @@ procedure HabilitarBotaoPorQuery(AQuery: TFDQuery; AButton: TControl);
 procedure OrdenarGrid(Column: TColumn);
 procedure ExtrairDatasRelatorio(const texto: string;
   out dtInicio, dtFim: TDateTime);
-procedure ExtrairDatasRelatorioTelemetria(
-  const ATexto: string; out dtInicio, dtFim: TDateTime);
-{ MÉTODO GENÉRICO PARA JVDateEdit }
-procedure NavegarMes(ADirecao: TDirecaoMes; const ADtInicio, ADtFim: TJvDateEdit);
+procedure ExtrairDatasRelatorioTelemetria(const ATexto: string;
+  out dtInicio, dtFim: TDateTime);
+{ MÃ‰TODO GENÃ‰RICO PARA JVDateEdit }
+procedure NavegarMes(ADirecao: TDirecaoMes;
+  const ADtInicio, ADtFim: TJvDateEdit);
+{ MÃ‰TODO GENÃ‰RICO PARA ALTERNAR PAINEL }
+procedure AlternarPainelGenerico(
+  APainel: TPanel;
+  ABtnToggle: TControl; // Alterado de TSpeedButton para TControl
+  var AFlagEstado: Boolean;
+  AExibir: Boolean;
+  ALarguraExpandida: Integer;
+  const AControlesExtras: array of TControl
+);
 
 implementation
 
 uses
   udmDados;
-procedure ExtrairDatasRelatorioTelemetria(
-  const ATexto: string; out dtInicio, dtFim: TDateTime);
+
+procedure ExtrairDatasRelatorioTelemetria(const ATexto: string;
+  out dtInicio, dtFim: TDateTime);
 var
   posDE, paraPara: Integer;
   sIni, sFim: string;
@@ -62,7 +73,7 @@ begin
   fs.TimeSeparator := ':';
   fs.DateSeparator := '/';
 
-  posDE    := Pos('De ', ATexto);
+  posDE := Pos('De ', ATexto);
   paraPara := Pos('Para', ATexto);
 
   sIni := Trim(Copy(ATexto, posDE + 3, paraPara - (posDE + 3)));
@@ -71,8 +82,9 @@ begin
   sFim := Trim(Copy(sFim, 1, 16));
 
   dtInicio := ConverterDataHora(sIni);
-  dtFim    := ConverterDataHora(sFim);
+  dtFim := ConverterDataHora(sFim);
 end;
+
 procedure ExtrairDatasRelatorio(const texto: string;
   out dtInicio, dtFim: TDateTime);
 var
@@ -92,7 +104,7 @@ var
     else
       sHora := '00:00';
 
-    result := StrToDate(sData, fs) + StrToTime(sHora, fs);
+    Result := StrToDate(sData, fs) + StrToTime(sHora, fs);
   end;
 
 begin
@@ -102,8 +114,8 @@ begin
   fs.TimeSeparator := ':';
   fs.DateSeparator := '/';
 
-  posDE := POS('De ', texto);
-  paraPara := POS('Para', texto);
+  posDE := Pos('De ', texto);
+  paraPara := Pos('Para', texto);
 
   sIni := Trim(Copy(texto, posDE + 3, paraPara - (posDE + 3)));
   sFim := Trim(Copy(texto, paraPara + 4, MaxInt));
@@ -114,9 +126,10 @@ begin
   dtFim := ConverterDataHora(sFim);
 end;
 
-procedure NavegarMes(ADirecao: TDirecaoMes; const ADtInicio, ADtFim: TJvDateEdit);
+procedure NavegarMes(ADirecao: TDirecaoMes;
+  const ADtInicio, ADtFim: TJvDateEdit);
 var
-  LData: TDate;
+  LData: tDate;
 begin
   // Extrai a data do componente Jv
   LData := ADtInicio.Date;
@@ -126,22 +139,24 @@ begin
   else
     LData := IncMonth(LData, 1);
 
-  // Define o período completo do mês
+  // Define o perÃ­odo completo do mÃªs
   ADtInicio.Date := StartOfAMonth(YearOf(LData), MonthOf(LData));
-  ADtFim.Date    := EndOfAMonth(YearOf(LData), MonthOf(LData));
+  ADtFim.Date := EndOfAMonth(YearOf(LData), MonthOf(LData));
 end;
 
 procedure AlterarMetas(AQuery: TDataSet; const AAmplitude, ADourado: Double);
 var
   LMetaAmarelo, LMetaVerde, LMetaDourado: Double;
 begin
-  if not Assigned(AQuery) then Exit;
+  if not Assigned(AQuery) then
+    Exit;
   LMetaDourado := ADourado;
-  LMetaVerde   := ADourado * AAmplitude;
+  LMetaVerde := ADourado * AAmplitude;
   LMetaAmarelo := LMetaVerde * AAmplitude;
-  if not (AQuery.State in [dsEdit, dsInsert]) then AQuery.Edit;
+  if not(AQuery.State in [dsEdit, dsInsert]) then
+    AQuery.edit;
   AQuery.FieldByName('META_AMARELO').AsFloat := LMetaAmarelo;
-  AQuery.FieldByName('META_VERDE').AsFloat   := LMetaVerde;
+  AQuery.FieldByName('META_VERDE').AsFloat := LMetaVerde;
   AQuery.FieldByName('META_DOURADO').AsFloat := LMetaDourado;
 end;
 
@@ -153,38 +168,50 @@ end;
 procedure textoProgressBar(barra: TProgressBar; texto: TLabel);
 begin
   if (barra.Max - barra.Min) > 0 then
-    texto.Caption := Format('%.0f%%', [(barra.Position - barra.Min) / (barra.Max - barra.Min) * 100]);
+    texto.Caption := Format('%.0f%%',
+      [(barra.Position - barra.Min) / (barra.Max - barra.Min) * 100]);
 end;
 
 procedure iniciarMemo(memo: TMemo);
 begin
   memo.Visible := true;
   memo.Height := 200;
-  memo.Lines.Add(UpperCase('hora início ' + (formatDateTime('dd|mmm|yy', now)) + '   ' + formatDateTime('ttt', time)));
+  memo.Lines.Add(UpperCase('hora inÃ­cio ' + (formatDateTime('dd|mmm|yy', now)) +
+    '   ' + formatDateTime('ttt', time)));
 end;
 
 procedure finalizarMemo(memo: TMemo; contador: Integer; texto: string);
 begin
   memo.Lines.Add(texto + IntToStr(contador));
-  memo.Lines.Add(UpperCase('hora final ' + (formatDateTime('dd|mmm|yy', now)) + '   ' + formatDateTime('ttt', time)));
+  memo.Lines.Add(UpperCase('hora final ' + (formatDateTime('dd|mmm|yy', now)) +
+    '   ' + formatDateTime('ttt', time)));
   memo.Lines.Add('');
 end;
 
 procedure abrirEscala(linha, veiculo, tipo_dia, funcionario, validar: Integer;
   dataInicial, dataFinal: tDate; qry: TFDQuery);
 begin
-  with dmDados do
-  begin
-    qry.Close;
-    if linha = 0 then qry.Params[0].Clear else qry.Params[0].Value := linha;
-    if veiculo = 0 then qry.Params[1].Clear else qry.Params[1].Value := veiculo;
-    if tipo_dia = 0 then qry.Params[2].Clear else qry.Params[2].Value := tipo_dia;
-    if funcionario = 0 then qry.Params[3].Clear else qry.Params[3].Value := funcionario;
-    qry.Params[4].AsDate := dataInicial;
-    qry.Params[5].AsDate := dataFinal;
-    qry.Params[6].Value := validar;
-    qry.Open;
-  end;
+  qry.Close;
+  if linha = 0 then
+    qry.Params[0].Clear
+  else
+    qry.Params[0].Value := linha;
+  if veiculo = 0 then
+    qry.Params[1].Clear
+  else
+    qry.Params[1].Value := veiculo;
+  if tipo_dia = 0 then
+    qry.Params[2].Clear
+  else
+    qry.Params[2].Value := tipo_dia;
+  if funcionario = 0 then
+    qry.Params[3].Clear
+  else
+    qry.Params[3].Value := funcionario;
+  qry.Params[4].AsDate := dataInicial;
+  qry.Params[5].AsDate := dataFinal;
+  qry.Params[6].Value := validar;
+  qry.Open;
 end;
 
 procedure preencher_edit(consulta: string; edit: TEdit);
@@ -198,10 +225,11 @@ begin
       sname := dmDados.con.ExecSQLScalar(consulta, [edit.Text + '%']);
       If sname <> '' then
       begin
-        Posicao := length(edit.Text);
-        For aux := length(edit.Text) + 1 to length(sname) do edit.Text := edit.Text + sname[aux];
+        Posicao := Length(edit.Text);
+        For aux := Length(edit.Text) + 1 to Length(sname) do
+          edit.Text := edit.Text + sname[aux];
         edit.SelStart := Posicao;
-        edit.SelLength := length(edit.Text);
+        edit.SelLength := Length(edit.Text);
       end;
     end;
   Except
@@ -217,14 +245,16 @@ procedure eventosTeclado(var Key: Word; Shift: TShiftState; campo: string);
 begin
   if (ssAlt in Shift) and (chr(Key) in ['N', 'n']) then
   begin
-    var NewString: string := 'Digite senha.';
+    var
+      NewString: string := 'Digite senha.';
     if (InputQuery('Acesso', 'Senha:', NewString)) and (NewString = '5421') then
     begin
       NewString := campo;
-      if InputQuery('Configuração', 'Valor:', NewString) then
+      if InputQuery('ConfiguraÃ§Ã£o', 'Valor:', NewString) then
       begin
         try
-          dmDados.con.ExecSQL('update parametros set sic=:sic', [StrToInt(NewString)]);
+          dmDados.con.ExecSQL('update parametros set sic=:sic',
+            [StrToInt(NewString)]);
         except
           ShowMessage('Erro ao atualizar');
         end;
@@ -232,6 +262,7 @@ begin
     end;
   end;
 end;
+
 procedure OrdenarGrid(Column: TColumn);
 var
   vDataset: TDataSet;
@@ -240,7 +271,7 @@ begin
   vDataset := Column.Field.DataSet;
   vFieldName := Column.FieldName;
 
-  // Verificamos se o DataSet é um FDQuery (Firebird) para usar IndexFieldNames
+  // Verificamos se o DataSet Ã© um FDQuery (Firebird) para usar IndexFieldNames
   if vDataset is TFDQuery then
   begin
     try
@@ -259,8 +290,57 @@ begin
         vDataset.EnableControls;
       end;
     except
-      ShowMessage('Não foi possível ordenar por este campo.');
+      ShowMessage('NÃ£o foi possÃ­vel ordenar por este campo.');
     end;
+  end;
+end;
+
+procedure AlternarPainelGenerico(
+  APainel: TPanel;
+  ABtnToggle: TControl;
+  var AFlagEstado: Boolean;
+  AExibir: Boolean;
+  ALarguraExpandida: Integer;
+  const AControlesExtras: array of TControl
+);
+var
+  I: Integer;
+begin
+  AFlagEstado := AExibir;
+  APainel.DisableAlign;
+  try
+    if AFlagEstado then
+    begin
+      APainel.Width := ALarguraExpandida;
+
+      // Ajusta o Caption de acordo com o tipo do botÃ£o passado
+      if ABtnToggle is TBitBtn then
+        TBitBtn(ABtnToggle).Caption := 'â—€ / â–¶'
+      else if ABtnToggle is TSpeedButton then
+        TSpeedButton(ABtnToggle).Caption := 'â—€ / â–¶'
+      else if ABtnToggle is TButton then
+        TButton(ABtnToggle).Caption := 'â—€ / â–¶';
+    end
+    else
+    begin
+      APainel.Width := 30;
+
+      if ABtnToggle is TBitBtn then
+        TBitBtn(ABtnToggle).Caption := 'â–¶'
+      else if ABtnToggle is TSpeedButton then
+        TSpeedButton(ABtnToggle).Caption := 'â–¶'
+      else if ABtnToggle is TButton then
+        TButton(ABtnToggle).Caption := 'â–¶';
+    end;
+
+    // Exibe ou oculta todos os controles extras passados no parÃ¢metro
+    for I := Low(AControlesExtras) to High(AControlesExtras) do
+    begin
+      if Assigned(AControlesExtras[I]) then
+        AControlesExtras[I].Visible := AFlagEstado;
+    end;
+  finally
+    APainel.EnableAlign;
   end;
 end;
 end.
