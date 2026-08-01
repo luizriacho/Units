@@ -33,10 +33,10 @@ procedure NavegarMes(ADirecao: TDirecaoMes;
 { MÉTODO GENÉRICO PARA ALTERNAR PAINEL }
 procedure AlternarPainelGenerico(
   APainel: TPanel;
-  ABtnToggle: TControl; // Alterado de TSpeedButton para TControl
+  ABtnToggle: TControl;
   var AFlagEstado: Boolean;
   AExibir: Boolean;
-  ALarguraExpandida: Integer;
+  ATamanhoExpandido: Integer;
   const AControlesExtras: array of TControl
 );
 
@@ -300,40 +300,84 @@ procedure AlternarPainelGenerico(
   ABtnToggle: TControl;
   var AFlagEstado: Boolean;
   AExibir: Boolean;
-  ALarguraExpandida: Integer;
+  ATamanhoExpandido: Integer;
   const AControlesExtras: array of TControl
 );
 var
   I: Integer;
+  vIsVertical: Boolean;
 begin
+  if not Assigned(APainel) then Exit;
+
   AFlagEstado := AExibir;
+  vIsVertical := APainel.Align in [alTop, alBottom];
+
   APainel.DisableAlign;
   try
     if AFlagEstado then
     begin
-      APainel.Width := ALarguraExpandida;
+      // Expande na dimensão correspondente
+      if vIsVertical then
+        APainel.Height := ATamanhoExpandido
+      else
+        APainel.Width := ATamanhoExpandido;
 
-      // Ajusta o Caption de acordo com o tipo do botão passado
-      if ABtnToggle is TBitBtn then
-        TBitBtn(ABtnToggle).Caption := '◀ / ▶'
-      else if ABtnToggle is TSpeedButton then
-        TSpeedButton(ABtnToggle).Caption := '◀ / ▶'
-      else if ABtnToggle is TButton then
-        TButton(ABtnToggle).Caption := '◀ / ▶';
+      // Ajusta o Caption do botão conforme a orientação
+      if Assigned(ABtnToggle) then
+      begin
+        if vIsVertical then
+        begin
+          if ABtnToggle is TBitBtn then
+            TBitBtn(ABtnToggle).Caption := '▲'
+          else if ABtnToggle is TSpeedButton then
+            TSpeedButton(ABtnToggle).Caption := '▲'
+          else if ABtnToggle is TButton then
+            TButton(ABtnToggle).Caption := '▲';
+        end
+        else
+        begin
+          if ABtnToggle is TBitBtn then
+            TBitBtn(ABtnToggle).Caption := '◀ / ▶'
+          else if ABtnToggle is TSpeedButton then
+            TSpeedButton(ABtnToggle).Caption := '◀ / ▶'
+          else if ABtnToggle is TButton then
+            TButton(ABtnToggle).Caption := '◀ / ▶';
+        end;
+      end;
     end
     else
     begin
-      APainel.Width := 30;
+      // Recolhe na dimensão correspondente (mantém 28/30px para a barrinha do botão)
+      if vIsVertical then
+        APainel.Height := 28
+      else
+        APainel.Width := 30;
 
-      if ABtnToggle is TBitBtn then
-        TBitBtn(ABtnToggle).Caption := '▶'
-      else if ABtnToggle is TSpeedButton then
-        TSpeedButton(ABtnToggle).Caption := '▶'
-      else if ABtnToggle is TButton then
-        TButton(ABtnToggle).Caption := '▶';
+      // Ajusta o Caption do botão conforme a orientação
+      if Assigned(ABtnToggle) then
+      begin
+        if vIsVertical then
+        begin
+          if ABtnToggle is TBitBtn then
+            TBitBtn(ABtnToggle).Caption := '▼'
+          else if ABtnToggle is TSpeedButton then
+            TSpeedButton(ABtnToggle).Caption := '▼'
+          else if ABtnToggle is TButton then
+            TButton(ABtnToggle).Caption := '▼';
+        end
+        else
+        begin
+          if ABtnToggle is TBitBtn then
+            TBitBtn(ABtnToggle).Caption := '▶'
+          else if ABtnToggle is TSpeedButton then
+            TSpeedButton(ABtnToggle).Caption := '▶'
+          else if ABtnToggle is TButton then
+            TButton(ABtnToggle).Caption := '▶';
+        end;
+      end;
     end;
 
-    // Exibe ou oculta todos os controles extras passados no parâmetro
+    // Exibe ou oculta os controles internos ou painel filho passados
     for I := Low(AControlesExtras) to High(AControlesExtras) do
     begin
       if Assigned(AControlesExtras[I]) then
