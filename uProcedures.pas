@@ -241,27 +241,27 @@ begin
   edit.Text := FormatFloat('#.00', StrToFloatDef(edit.Text, 0));
 end;
 
-procedure eventosTeclado(var Key: Word; Shift: TShiftState; campo: string);
-begin
-  if (ssAlt in Shift) and (chr(Key) in ['N', 'n']) then
+  procedure eventosTeclado(var Key: Word; Shift: TShiftState; campo: string);
   begin
-    var
-      NewString: string := 'Digite senha.';
-    if (InputQuery('Acesso', 'Senha:', NewString)) and (NewString = '5421') then
+    if (ssAlt in Shift) and (chr(Key) in ['N', 'n']) then
     begin
-      NewString := campo;
-      if InputQuery('Configuração', 'Valor:', NewString) then
+      var
+        NewString: string := 'Digite senha.';
+      if (InputQuery('Acesso', 'Senha:', NewString)) and (NewString = '5421') then
       begin
-        try
-          dmDados.con.ExecSQL('update parametros set sic=:sic',
-            [StrToInt(NewString)]);
-        except
-          ShowMessage('Erro ao atualizar');
+        NewString := campo;
+        if InputQuery('Configuração', 'Valor:', NewString) then
+        begin
+          try
+            dmDados.con.ExecSQL('update parametros set sic=:sic',
+              [StrToInt(NewString)]);
+          except
+            ShowMessage('Erro ao atualizar');
+          end;
         end;
       end;
     end;
   end;
-end;
 
 procedure OrdenarGrid(Column: TColumn);
 var

@@ -76,10 +76,25 @@ function validarData(dImportacao, dParametro: TDate): Boolean;
 function PreencherComChar(const Texto: string; TamanhoTotal: Integer;
   const Caractere: Char): string;
 function ConverterHora(const S: string): string;
+function ContarDomingosNoPeriodo(ADataInicio, ADataFim: TDate): Integer;
 
 implementation
 
 uses uPrincipal, udmDados;
+
+function ContarDomingosNoPeriodo(ADataInicio, ADataFim: TDate): Integer;
+var
+  vData: TDate;
+begin
+  Result := 0;
+  vData := ADataInicio;
+  while vData <= ADataFim do
+  begin
+    if DayOfWeek(vData) = 1 then // 1 = Domingo no Delphi
+      Inc(Result);
+    vData := vData + 1;
+  end;
+end;
 
 function ConverterHora(const S: string): string;
 var
