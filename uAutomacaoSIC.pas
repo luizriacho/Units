@@ -1,108 +1,4 @@
-﻿//unit uAutomacaoSIC;
-//
-//interface
-//
-//uses
-//  System.SysUtils, System.Classes, Winapi.Windows, Winapi.ShellAPI,
-//  System.NetEncoding, Data.DB;
-//
-//type
-//  TAutomacaoSIC = class
-//  private
-//    class function Pad(const S: string; Len: Integer): string;
-//  public
-//    class procedure EnviarRelatorioOperador(
-//      ANumero: string;
-//      ANomeOperador: string;
-//      ADesempenho: string;
-//      AMediaPontuacao: Double;
-//      ATotalOcorrencias : Integer;
-//      ARanking: Integer;
-//      APeriodoStr: string;
-//      ADiasDirecao: Integer;
-//      ADataSetDetalhe: TDataSet;
-//      ACampoPontuacao: string = 'PONTUACAO_MOVIMENTO'
-//    );
-//  end;
-//
-//implementation
-//
-//{ TAutomacaoSIC }
-//
-//class function TAutomacaoSIC.Pad(const S: string; Len: Integer): string;
-//begin
-//  // Garante que o preenchimento de espaços funcione para fontes monoespaçadas
-//  Result := S + StringOfChar(' ', Len - Length(S));
-//end;
-//
-//class procedure TAutomacaoSIC.EnviarRelatorioOperador(
-//  ANumero: string; ANomeOperador: string; ADesempenho: string;
-//  AMediaPontuacao: Double;ATotalOcorrencias, ARanking: Integer; APeriodoStr: string;
-//  ADiasDirecao: Integer; ADataSetDetalhe: TDataSet;
-//  ACampoPontuacao: string = 'PONTUACAO_MOVIMENTO'
-//);
-//var
-//  LMsg, LUrl, LNumeroLimpo, LParametros, LEmojiSelo: string;
-//  i: Integer;
-//begin
-//  // 1. Limpeza do Telefone
-//  LNumeroLimpo := '';
-//  for i := 1 to Length(ANumero) do
-//    if ANumero[i] in ['0'..'9'] then LNumeroLimpo := LNumeroLimpo + ANumero[i];
-//  if (Length(LNumeroLimpo) = 11) then LNumeroLimpo := '55' + LNumeroLimpo;
-//
-//  // 2. Montagem do Cabeçalho Mestre
-//  LMsg := '📊 *RELATÓRIO DE OPERAÇÃO - SIC*' + sLineBreak +
-//          '--------------------------------------------' + sLineBreak +
-//          '👤 *Operador:* ' + ANomeOperador + sLineBreak +
-//          '🏆 *Ranking:* ' + IntToStr(ARanking) + 'º Lugar' + sLineBreak +
-//          '📅 *Período:* ' + UpperCase(APeriodoStr) + sLineBreak + sLineBreak +
-//          '⭐ *Desempenho:* ' + ADesempenho + sLineBreak +
-//          '📈 *Média Pontuação:* ' + FormatFloat('0.00', AMediaPontuacao) + sLineBreak +
-//          '☸️ *Dias na Direção:* ' + IntToStr(ADiasDirecao) + ' dias' + sLineBreak +
-//          '⚠️ *Total de Ocorrências:* ' + IntToStr(ATotalOcorrencias) + sLineBreak +
-//          '--------------------------------------------' + sLineBreak +
-//          '📝 *DETALHE DIÁRIO:*' + sLineBreak +
-//          // AJUSTE DE ALINHAMENTO: 3 espaços antes da crase para alinhar com o emoji
-//          '    `   Dia   |    Veic    |    Pts`' + sLineBreak;
-//
-//  // 3. Detalhamento
-//  ADataSetDetalhe.First;
-//  while not ADataSetDetalhe.Eof do
-//  begin
-//    LEmojiSelo := '⚪';
-//    if ADataSetDetalhe.FieldByName('COR_SELO').AsString = 'VERDE' then LEmojiSelo := '🟢'
-//    else if ADataSetDetalhe.FieldByName('COR_SELO').AsString = 'VERMELHO' then LEmojiSelo := '🔴'
-//    else if ADataSetDetalhe.FieldByName('COR_SELO').AsString = 'AMARELO' then LEmojiSelo := '🟡'
-//    else if ADataSetDetalhe.FieldByName('COR_SELO').AsString = 'DOURADO' then LEmojiSelo := '⭐';
-//
-//    // Montagem da linha: Emoji + 1 espaço + crase + dados
-//    // O Pad(..., 4) garante que veículos menores não desalinhem a coluna de pontos
-//    LMsg := LMsg + LEmojiSelo + ' `' +
-//            FormatDateTime('dd', ADataSetDetalhe.FieldByName('DATA').AsDateTime) + '  | ' +
-//            Pad(ADataSetDetalhe.FieldByName('ID_VEICULO').AsString, 4) + ' | ' +
-//            FormatFloat('0.00', ADataSetDetalhe.FieldByName(ACampoPontuacao).AsFloat) + '`' + sLineBreak;
-//
-//    ADataSetDetalhe.Next;
-//  end;
-//
-//  LMsg := LMsg + sLineBreak + '_Gerado pelo Sistema SIC_';
-//
-//  // 4. Execução via Chrome Proxy
-//  LUrl := 'https://web.whatsapp.com/send?phone=' + LNumeroLimpo + '&text=' + TNetEncoding.URL.Encode(LMsg);
-//  LParametros := '--profile-directory="Default" --ignore-profile-directory-if-not-exists --app=' + LUrl;
-//
-//  ShellExecute(0, 'open', PChar('C:\Program Files\Google\Chrome\Application\chrome_proxy.exe'),
-//               PChar(LParametros), nil, SW_SHOWNORMAL);
-//
-//  // 5. Automação do Teclado (15s para garantir que o texto longo carregue)
-//  Sleep(15000);
-//  keybd_event(VK_RETURN, 0, 0, 0);
-//  keybd_event(VK_RETURN, 0, KEYEVENTF_KEYUP, 0);
-//end;
-//
-//end.
-unit uAutomacaoSIC;
+﻿unit uAutomacaoSIC;
 
 interface
 
@@ -114,6 +10,7 @@ type
   TAutomacaoSIC = class
   private
     class function Pad(const S: string; Len: Integer): string;
+    class function ObterSaudacao: string;
   public
     class procedure EnviarRelatorioOperador(
       ANumero: string;
@@ -149,6 +46,19 @@ implementation
 class function TAutomacaoSIC.Pad(const S: string; Len: Integer): string;
 begin
   Result := S + StringOfChar(' ', Len - Length(S));
+end;
+
+class function TAutomacaoSIC.ObterSaudacao: string;
+var
+  LHora: Word;
+begin
+  LHora := StrToIntDef(FormatDateTime('hh', Now), 12);
+  if (LHora >= 5) and (LHora < 12) then
+    Result := 'Bom dia'
+  else if (LHora >= 12) and (LHora < 18) then
+    Result := 'Boa tarde'
+  else
+    Result := 'Boa noite';
 end;
 
 class procedure TAutomacaoSIC.EnviarRelatorioOperador(
@@ -224,15 +134,14 @@ begin
   if (ANumero = '') or (ADataSetEscala = nil) or (ADataSetEscala.IsEmpty) then
     Exit;
 
-  // Limpeza do número
   LNumeroLimpo := '';
   for i := 1 to Length(ANumero) do
     if ANumero[i] in ['0'..'9'] then LNumeroLimpo := LNumeroLimpo + ANumero[i];
   if (Length(LNumeroLimpo) = 11) then LNumeroLimpo := '55' + LNumeroLimpo;
 
-  // Cabeçalho alinhado ao padrão visual do App
-  LMsg := '📅 *ESCALA PROGRAMADA*' + sLineBreak +
-          '👤 *' + UpperCase(ANomeOperador) + '*' + sLineBreak +
+  // Saudação variável para alterar a assinatura do texto
+  LMsg := ObterSaudacao + ', ' + ANomeOperador + '! 👋' + sLineBreak + sLineBreak +
+          '📅 *ESCALA PROGRAMADA*' + sLineBreak +
           '📆 *' + FormatDateTime('dd mmm yyyy', ADataEscala) + ' · ' + FormatDateTime('dddd', ADataEscala) + '*' + sLineBreak +
           '--------------------------------------------' + sLineBreak;
 
@@ -241,28 +150,36 @@ begin
     ADataSetEscala.First;
     while not ADataSetEscala.Eof do
     begin
-      LLinha   := Trim(ADataSetEscala.FieldByName('LINHA').AsString);
-      LInicio  := Trim(ADataSetEscala.FieldByName('HORA_INICIO').AsString);
-      if LInicio = '' then LInicio := '-';
+      LLinha := Trim(ADataSetEscala.FieldByName('LINHA').AsString);
 
-      LFim     := Trim(ADataSetEscala.FieldByName('HORA_FIM').AsString);
-      if LFim = '' then LFim := '-';
+      if SameText(LLinha, 'FOLGA') then
+      begin
+        LMsg := LMsg + '🏖️ *LINHA: FOLGA*' + sLineBreak +
+                '--------------------------------------------' + sLineBreak;
+      end
+      else
+      begin
+        LInicio := Trim(ADataSetEscala.FieldByName('HORA_INICIO').AsString);
+        if LInicio = '' then LInicio := '-';
 
-      LSaida   := Trim(ADataSetEscala.FieldByName('INICIO_VIAGEM').AsString);
-      if LSaida = '' then LSaida := '-';
+        LFim := Trim(ADataSetEscala.FieldByName('HORA_FIM').AsString);
+        if LFim = '' then LFim := '-';
 
-      LRetorno := Trim(ADataSetEscala.FieldByName('PONTO_RETORNO').AsString);
-      if LRetorno = '' then LRetorno := '-';
+        LSaida := Trim(ADataSetEscala.FieldByName('INICIO_VIAGEM').AsString);
+        if LSaida = '' then LSaida := '-';
 
-      LPartida := Trim(ADataSetEscala.FieldByName('PONTO_PARTIDA').AsString);
-      if LPartida = '' then LPartida := '-';
+        LRetorno := Trim(ADataSetEscala.FieldByName('PONTO_RETORNO').AsString);
+        if LRetorno = '' then LRetorno := '-';
 
-      // Estrutura espelhada do Card do App
-      LMsg := LMsg + '🚌 *LINHA: ' + LLinha + '*' + sLineBreak +
-              '⏱️ Início: `' + LInicio + '` | Fim: `' + LFim + '` | Saída: `' + LSaida + '`' + sLineBreak +
-              '📍 Partida: ' + LPartida + sLineBreak +
-              '🔄 Retorno: ' + LRetorno + sLineBreak +
-              '--------------------------------------------' + sLineBreak;
+        LPartida := Trim(ADataSetEscala.FieldByName('PONTO_PARTIDA').AsString);
+        if LPartida = '' then LPartida := '-';
+
+        LMsg := LMsg + '🚌 *LINHA: ' + LLinha + '*' + sLineBreak +
+                '⏱️ Início: `' + LInicio + '` | Fim: `' + LFim + '` | Saída: `' + LSaida + '`' + sLineBreak +
+                '📍 Partida: ' + LPartida + sLineBreak +
+                '🔄 Retorno: ' + LRetorno + sLineBreak +
+                '--------------------------------------------' + sLineBreak;
+      end;
 
       ADataSetEscala.Next;
     end;
@@ -280,7 +197,8 @@ begin
   ShellExecute(0, 'open', PChar('C:\Program Files\Google\Chrome\Application\chrome_proxy.exe'),
                  PChar(LParametros), nil, SW_SHOWNORMAL);
 
-  Sleep(15000);
+  // Aguarda o carregamento da aba antes de pressionar Enter
+  Sleep(12000);
   keybd_event(VK_RETURN, 0, 0, 0);
   keybd_event(VK_RETURN, 0, KEYEVENTF_KEYUP, 0);
 end;
@@ -293,10 +211,12 @@ class procedure TAutomacaoSIC.EnviarEscalasEmLote(
 var
   LChaveFun: Integer;
   LNomeOperador, LWhatsApp: string;
+  LTempoPausa: Integer;
 begin
   if (ADataSetFuncionarios = nil) or (ADataSetFuncionarios.IsEmpty) then
     Exit;
 
+  Randomize;
   ADataSetFuncionarios.First;
   while not ADataSetFuncionarios.Eof do
   begin
@@ -318,7 +238,9 @@ begin
           ADataSetItinerario
         );
 
-        Sleep(3000);
+        // Tempo de pausa aleatório entre 8 e 15 segundos para simular comportamento humano
+        LTempoPausa := 8000 + Random(7000);
+        Sleep(LTempoPausa);
       end;
     end;
 
