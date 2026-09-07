@@ -1,0 +1,36 @@
+﻿<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+    <PropertyGroup>
+        <ProjectGuid>{B576FDEC-6339-43AC-8053-FF0228569DDA}</ProjectGuid>
+    </PropertyGroup>
+    <ItemGroup>
+        <Projects Include="LogAcesso.dpk.dproj">
+            <Dependencies/>
+        </Projects>
+    </ItemGroup>
+    <ProjectExtensions>
+        <Borland.Personality>Default.Personality.12</Borland.Personality>
+        <Borland.ProjectType/>
+        <BorlandProject>
+            <Default.Personality/>
+        </BorlandProject>
+    </ProjectExtensions>
+    <Target Name="LogAcesso_dpk">
+        <MSBuild Projects="LogAcesso.dpk.dproj"/>
+    </Target>
+    <Target Name="LogAcesso_dpk:Clean">
+        <MSBuild Projects="LogAcesso.dpk.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="LogAcesso_dpk:Make">
+        <MSBuild Projects="LogAcesso.dpk.dproj" Targets="Make"/>
+    </Target>
+    <Target Name="Build">
+        <CallTarget Targets="LogAcesso_dpk"/>
+    </Target>
+    <Target Name="Clean">
+        <CallTarget Targets="LogAcesso_dpk:Clean"/>
+    </Target>
+    <Target Name="Make">
+        <CallTarget Targets="LogAcesso_dpk:Make"/>
+    </Target>
+    <Import Project="$(BDS)\Bin\CodeGear.Group.Targets" Condition="Exists('$(BDS)\Bin\CodeGear.Group.Targets')"/>
+</Project>
