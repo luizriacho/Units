@@ -35,10 +35,16 @@ requires
   vcldb,
   FireDAC,
   FireDACCommonDriver,
-  FireDACCommon;
+  FireDACCommon,
+  vclx,
+  Jcl,
+  JvCore,
+  JvStdCtrls;
 
 contains
   LogAcessoGrid in 'LogAcessoGrid.pas',
-  DBGridExport in 'DBGridExport.pas';
+  DBGridExport in 'DBGridExport.pas',
+  ufrmLoginGenerico in 'ufrmLoginGenerico.pas' {frmLoginGenerico},
+  uControleAcessoComponent in 'uControleAcessoComponent.pas';
 
 end.

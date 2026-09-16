@@ -3,9 +3,22 @@
 interface
 
 uses
-  Winapi.Windows, Winapi.Messages, System.SysUtils, System.Variants, System.Classes, 
-  Vcl.Graphics, Vcl.Controls, Vcl.Forms, Vcl.Dialogs, Vcl.StdCtrls, Vcl.Buttons,
-  FireDAC.Comp.Client, uFrameworkAcesso;
+  Winapi.Windows
+, Winapi.Messages
+, System.SysUtils
+, System.Variants
+, System.Classes
+, Vcl.Graphics
+, Vcl.Controls
+, Vcl.Forms
+, Vcl.Dialogs
+, Vcl.StdCtrls
+, Vcl.Buttons
+, FireDAC.Comp.Client
+, uFrameworkAcesso;
+
+// Descomente ou comente a linha abaixo para ativar/desativar o Auto-Login de Desenvolvimento manualmente:
+{$DEFINE AUTO_LOGIN_DEV}
 
 type
   TfrmLoginGenerico = class(TForm)
@@ -21,20 +34,46 @@ type
   private
     FConnection: TFDConnection;
   public
-    class function ExecutarLogin(AConnection: TFDConnection): Boolean;
+    class function ExecutarLogin(AConnection: TFDConnection; const AAutoLoginDev: Boolean = False): Boolean;
   end;
 
 var
   frmLoginGenerico: TfrmLoginGenerico;
 
+const
+  // Dados do usuário para Auto Login no ambiente de desenvolvimento
+  USUARIO_DEV_AUTO_LOGIN = 'ADMIN';
+  SENHA_DEV_AUTO_LOGIN   = '123';
+
 implementation
 
 {$R *.dfm}
 
-class function TfrmLoginGenerico.ExecutarLogin(AConnection: TFDConnection): Boolean;
+class function TfrmLoginGenerico.ExecutarLogin(AConnection: TFDConnection; const AAutoLoginDev: Boolean = False): Boolean;
 var
   Frm: TfrmLoginGenerico;
+  vAutoLoginAtivo: Boolean;
 begin
+  vAutoLoginAtivo := AAutoLoginDev;
+
+  // 1. Verifica se a diretiva de compilação ou modo DEBUG do Delphi está ativa
+  {$IFDEF AUTO_LOGIN_DEV}
+    vAutoLoginAtivo := True;
+  {$ENDIF}
+
+  {$IFDEF DEBUG}
+    vAutoLoginAtivo := True;
+  {$ENDIF}
+
+  // 2. Se o Auto-Login estiver ativado, autentica silenciosamente sem exibir a tela de login
+  if vAutoLoginAtivo then
+  begin
+    Result := TControleAcessoEngine.AutenticarECarregarSessao(AConnection, USUARIO_DEV_AUTO_LOGIN, SENHA_DEV_AUTO_LOGIN);
+    if Result then
+      Exit;
+  end;
+
+  // 3. Caso contrário (ou se o auto-login falhar), exibe a tela de login normalmente
   Frm := TfrmLoginGenerico.Create(nil);
   try
     Frm.FConnection := AConnection;
@@ -78,6 +117,7 @@ begin
     // NÃO altera o ModalResult aqui para o formulário NÃO fechar com sucesso
   end;
 end;
+
 procedure TfrmLoginGenerico.FormKeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
 begin
   if Key = VK_RETURN then

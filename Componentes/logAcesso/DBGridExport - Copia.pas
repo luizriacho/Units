@@ -4,7 +4,6 @@ interface
 
 uses
   Winapi.Windows
-, Winapi.Messages
 , System.SysUtils
 , System.Classes
 , System.Types
@@ -16,11 +15,11 @@ uses
 , Vcl.DBGrids
 , Vcl.Graphics
 , Vcl.Printers
-, Vcl.ComCtrls
 , Data.DB
 , FireDAC.Comp.Client
 , FireDAC.Stan.Option
 , Vcl.Dialogs
+, JvToolEdit
 , UExcelService;
 
 type
@@ -36,9 +35,9 @@ type
     FBtnExportarExcel: TBitBtn;
     FBtnImprimir: TBitBtn;
 
-    // Controles de Filtro/Pesquisa (Usando TDateTimePicker nativo)
-    FDateEditInicio: TDateTimePicker;
-    FDateEditFim: TDateTimePicker;
+    // Controles de Filtro/Pesquisa
+    FDateEditInicio: TJvDateEdit;
+    FDateEditFim: TJvDateEdit;
     FEditPesquisa: TEdit;
     FBtnConsultar: TBitBtn;
 
@@ -88,11 +87,9 @@ type
     procedure OrdenarGrid(Column: TColumn);
     procedure ImprimirGrid;
     procedure AtualizarCaptionToggle;
-    function GetTituloComPeriodo: string;
   protected
     procedure Notification(AComponent: TComponent; Operation: TOperation); override;
     procedure Resize; override;
-    procedure Paint; override;
   public
     constructor Create(AOwner: TComponent); override;
     destructor Destroy; override;
@@ -100,8 +97,8 @@ type
     procedure SetGridVisible(AVisible: Boolean);
 
     property Grid: TDBGrid read FGrid;
-    property DateEditInicio: TDateTimePicker read FDateEditInicio;
-    property DateEditFim: TDateTimePicker read FDateEditFim;
+    property DateEditInicio: TJvDateEdit read FDateEditInicio;
+    property DateEditFim: TJvDateEdit read FDateEditFim;
     property EditPesquisa: TEdit read FEditPesquisa;
   published
     property DataSource: TDataSource read FDataSource write SetDataSource;
@@ -154,8 +151,6 @@ begin
   FAlturaExpandido := 400;
   Caption := '';
   BevelOuter := bvNone;
-  BevelInner := bvNone;
-  ShowCaption := False;
 
   FExibirExportarExcel := True;
   FExibirImprimir := True;
@@ -174,12 +169,6 @@ end;
 destructor TDBGridExport.Destroy;
 begin
   inherited Destroy;
-end;
-
-procedure TDBGridExport.Paint;
-begin
-  Caption := '';
-  inherited Paint;
 end;
 
 procedure TDBGridExport.Resize;
@@ -297,26 +286,6 @@ begin
   FEditPesquisa.Text := Value;
 end;
 
-function TDBGridExport.GetTituloComPeriodo: string;
-var
-  vBaseTitulo: string;
-begin
-  if Trim(FTituloRelatorio) <> '' then
-    vBaseTitulo := FTituloRelatorio
-  else
-    vBaseTitulo := 'Relatório de Dados';
-
-  // Adiciona as datas no título se estiverem ativas
-  if FExibirDataInicio and FExibirDataFim then
-    Result := Format('%s - Período: %s a %s', [vBaseTitulo, FormatDateTime('dd/mm/yyyy', FDateEditInicio.Date), FormatDateTime('dd/mm/yyyy', FDateEditFim.Date)])
-  else if FExibirDataInicio then
-    Result := Format('%s - A partir de: %s', [vBaseTitulo, FormatDateTime('dd/mm/yyyy', FDateEditInicio.Date)])
-  else if FExibirDataFim then
-    Result := Format('%s - Até: %s', [vBaseTitulo, FormatDateTime('dd/mm/yyyy', FDateEditFim.Date)])
-  else
-    Result := vBaseTitulo;
-end;
-
 procedure TDBGridExport.Notification(AComponent: TComponent; Operation: TOperation);
 begin
   inherited Notification(AComponent, Operation);
@@ -339,25 +308,20 @@ begin
   FPanelBotoes.Height := 38;
   FPanelBotoes.BevelOuter := bvLowered;
   FPanelBotoes.Caption := '';
-  FPanelBotoes.ShowCaption := False;
 
-  // Data Início (TDateTimePicker)
-  FDateEditInicio := TDateTimePicker.Create(Self);
+  // Data Início
+  FDateEditInicio := TJvDateEdit.Create(Self);
   FDateEditInicio.Parent := FPanelBotoes;
   FDateEditInicio.Top := 6;
-  FDateEditInicio.Width := 100;
+  FDateEditInicio.Width := 95;
   FDateEditInicio.Height := 24;
-  FDateEditInicio.Format := 'dd/MM/yyyy';
-  FDateEditInicio.Date := Date;
 
-  // Data Fim (TDateTimePicker)
-  FDateEditFim := TDateTimePicker.Create(Self);
+  // Data Fim
+  FDateEditFim := TJvDateEdit.Create(Self);
   FDateEditFim.Parent := FPanelBotoes;
   FDateEditFim.Top := 6;
-  FDateEditFim.Width := 100;
+  FDateEditFim.Width := 95;
   FDateEditFim.Height := 24;
-  FDateEditFim.Format := 'dd/MM/yyyy';
-  FDateEditFim.Date := Date;
 
   // Campo Texto Pesquisa
   FEditPesquisa := TEdit.Create(Self);
@@ -409,7 +373,6 @@ begin
   FPanelGrid.Parent := Self;
   FPanelGrid.Align := alClient;
   FPanelGrid.BevelOuter := bvNone;
-  FPanelGrid.ShowCaption := False;
 
   // DBGrid
   FGrid := TDBGrid.Create(Self);
@@ -445,41 +408,26 @@ begin
 end;
 
 procedure TDBGridExport.SetGridVisible(AVisible: Boolean);
-var
-  vParentControl: TWinControl;
 begin
   if FPanelGrid.Visible <> AVisible then
   begin
-    FPanelGrid.Visible := AVisible;
-    vParentControl := Parent;
+    if AVisible then
+    begin
+      // Expandir
+      FPanelGrid.Visible := True;
+      if Align = alNone then
+        Height := FAlturaExpandido;
+    end
+    else
+    begin
+      // Recolher
+      if Align = alNone then
+        FAlturaExpandido := Height;
 
-    if Assigned(vParentControl) then
-      vParentControl.DisableAlign;
-
-    try
-      if AVisible then
-      begin
-        Constraints.MinHeight := 0;
-        Constraints.MaxHeight := 0;
-        Self.Height := FAlturaExpandido;
-      end
-      else
-      begin
-        if Self.Height > FPanelBotoes.Height then
-          FAlturaExpandido := Self.Height;
-
-        Constraints.MinHeight := FPanelBotoes.Height;
-        Constraints.MaxHeight := FPanelBotoes.Height;
-        Self.Height := FPanelBotoes.Height;
-      end;
-    finally
-      if Assigned(vParentControl) then
-      begin
-        vParentControl.EnableAlign;
-        vParentControl.Realign;
-      end;
+      FPanelGrid.Visible := False;
+      if Align = alNone then
+        Height := FPanelBotoes.Height;
     end;
-
     AtualizarCaptionToggle;
   end;
 end;
@@ -571,9 +519,12 @@ begin
 
   vDataSet := FDataSource.DataSet;
 
+  // Força limpar colunas anteriores gravadas no DFM/IDE
   FGrid.Columns.Clear;
   FGrid.Canvas.Font := FGrid.Font;
 
+  // 1. Recria as colunas exclusivamente dos TFields que têm Tag = FTagExportacao (0)
+  //    e calcula a largura do título (fonte em negrito, igual ao cabeçalho do grid)
   FGrid.Canvas.Font.Style := [fsBold];
   for i := 0 to vDataSet.FieldCount - 1 do
   begin
@@ -587,6 +538,7 @@ begin
 
       SetLength(vLarguraTitulos, FGrid.Columns.Count);
 
+      // Largura do título (com a fonte em negrito usada no cabeçalho do DBGrid)
       vLarguraTitulo := FGrid.Canvas.TextWidth(vField.DisplayLabel) + MARGEM_TITULO;
       vColuna.Width := vLarguraTitulo;
       vLarguraTitulos[FGrid.Columns.Count - 1] := vLarguraTitulo;
@@ -594,6 +546,8 @@ begin
   end;
   FGrid.Canvas.Font.Style := [];
 
+  // 2. Percorre os dados (fonte normal, igual às células) medindo o texto de cada campo
+  //    e mantém, por coluna, a maior largura encontrada
   SetLength(vLarguraColunas, FGrid.Columns.Count);
   for vIndiceColuna := 0 to FGrid.Columns.Count - 1 do
     vLarguraColunas[vIndiceColuna] := vLarguraTitulos[vIndiceColuna];
@@ -629,6 +583,7 @@ begin
     end;
   end;
 
+  // 3. Aplica a largura final: título se for maior, senão a largura dos dados
   for vIndiceColuna := 0 to FGrid.Columns.Count - 1 do
   begin
     vLarguraTitulo := vLarguraTitulos[vIndiceColuna];
@@ -661,7 +616,10 @@ begin
 
   CarregarEAutoAjustarColunas;
 
-  vTituloExportacao := GetTituloComPeriodo;
+  if Trim(FTituloRelatorio) <> '' then
+    vTituloExportacao := FTituloRelatorio
+  else
+    vTituloExportacao := 'Relatório de Dados';
 
   TExcelService.ExportarDataSet(FDataSource.DataSet, FTagExportacao, vTituloExportacao);
 end;
@@ -740,7 +698,6 @@ var
   vScaleX, vScaleY: Double;
   vLarguraColuna: Integer;
   vBookmark: TBookmark;
-  vTituloImpressao: string;
 begin
   if not Assigned(FDataSource) or not Assigned(FDataSource.DataSet) or FDataSource.DataSet.IsEmpty then
   begin
@@ -748,10 +705,8 @@ begin
     Exit;
   end;
 
-  vTituloImpressao := GetTituloComPeriodo;
-
   Printer.Orientation := poLandscape;
-  Printer.Title := vTituloImpressao;
+  Printer.Title := FTituloRelatorio;
   Printer.BeginDoc;
   try
     vScaleX := GetDeviceCaps(Printer.Handle, LOGPIXELSX) / 96.0;
@@ -763,7 +718,7 @@ begin
     Printer.Canvas.Font.Name := 'Arial';
     Printer.Canvas.Font.Size := 14;
     Printer.Canvas.Font.Style := [fsBold];
-    Printer.Canvas.TextOut(Round(30 * vScaleX), vPosY, vTituloImpressao);
+    Printer.Canvas.TextOut(Round(30 * vScaleX), vPosY, FTituloRelatorio);
 
     vPosY := vPosY + Round(35 * vScaleY);
 
