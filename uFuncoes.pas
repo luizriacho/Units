@@ -77,11 +77,41 @@ function PreencherComChar(const Texto: string; TamanhoTotal: Integer;
   const Caractere: Char): string;
 function ConverterHora(const S: string): string;
 function ContarDomingosNoPeriodo(ADataInicio, ADataFim: TDate): Integer;
-
+function FormatarHoraHHMM(vValor: string): string;
 implementation
 
 uses uPrincipal, udmDados;
 
+function FormatarHoraHHMM(vValor: string): string;
+var
+  vInt: Integer;
+  vHoras, vMinutos: Integer;
+begin
+  vValor := Trim(vValor);
+
+  if (vValor = '') or (vValor = '0') then
+    Exit('00:00');
+
+  // Se já possui os dois pontos, retorna o próprio valor
+  if Pos(':', vValor) > 0 then
+    Exit(vValor);
+
+  vInt := StrToIntDef(vValor, 0);
+
+  // Trata formatos estilo '1335' (13:35), '640' (06:40) ou '26' (00:26)
+  if Length(vValor) >= 3 then
+  begin
+    vMinutos := vInt mod 100;
+    vHoras := vInt div 100;
+  end
+  else
+  begin
+    vHoras := 0;
+    vMinutos := vInt;
+  end;
+
+  Result := Format('%.2d:%.2d', [vHoras, vMinutos]);
+end;
 function ContarDomingosNoPeriodo(ADataInicio, ADataFim: TDate): Integer;
 var
   vData: TDate;

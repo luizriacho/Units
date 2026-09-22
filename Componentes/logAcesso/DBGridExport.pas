@@ -60,6 +60,7 @@ type
 
     // Eventos personalizados
     FOnConsultar: TNotifyEvent;
+    FOnDrawColumnCell: TDrawColumnCellEvent;
 
     procedure SetDataSource(const Value: TDataSource);
     procedure SetExibirExportarExcel(const Value: Boolean);
@@ -127,8 +128,9 @@ type
     property TituloRelatorio: string read FTituloRelatorio write FTituloRelatorio;
     property TagExportacao: Integer read FTagExportacao write FTagExportacao default 0;
 
-    // Evento do botão Consultar
+    // Eventos
     property OnConsultar: TNotifyEvent read FOnConsultar write FOnConsultar;
+    property OnDrawColumnCell: TDrawColumnCellEvent read FOnDrawColumnCell write FOnDrawColumnCell;
 
     property Align;
     property Anchors;
@@ -306,7 +308,6 @@ begin
   else
     vBaseTitulo := 'Relatório de Dados';
 
-  // Adiciona as datas no título se estiverem ativas
   if FExibirDataInicio and FExibirDataFim then
     Result := Format('%s - Período: %s a %s', [vBaseTitulo, FormatDateTime('dd/mm/yyyy', FDateEditInicio.Date), FormatDateTime('dd/mm/yyyy', FDateEditFim.Date)])
   else if FExibirDataInicio then
@@ -553,11 +554,11 @@ end;
 
 procedure TDBGridExport.CarregarEAutoAjustarColunas;
 const
-  MARGEM_TITULO = 14;
-  MARGEM_DADOS  = 10;
+  MARGEM_TITULO = 5;
+  MARGEM_DADOS  = 5;
   MAX_LINHAS_AMOSTRA = 500;
 var
-  i, vLarguraTitulo, vLarguraDados, vLarguraTextoDados, vLarguraFinal: Integer;
+  i, vLarguraTitulo, vLarguraDados, vLarguraTextoDados, vLarguraFinal, vLarguraDisplay: Integer;
   vField: TField;
   vColuna: TColumn;
   vDataSet: TDataSet;
@@ -566,18 +567,22 @@ var
   vLarguraTitulos: array of Integer;
   vLarguraColunas: array of Integer;
   vIndiceColuna: Integer;
+  vAvgCharWidth: Integer;
 begin
   if not Assigned(FDataSource) or not Assigned(FDataSource.DataSet) then Exit;
 
   vDataSet := FDataSource.DataSet;
 
   FGrid.Columns.Clear;
-  FGrid.Canvas.Font := FGrid.Font;
+  FGrid.Canvas.Font.Assign(FGrid.Font);
 
+  // 1. Filtra estritamente os campos onde vField.Tag = FTagExportacao
   FGrid.Canvas.Font.Style := [fsBold];
   for i := 0 to vDataSet.FieldCount - 1 do
   begin
     vField := vDataSet.Fields[i];
+
+    // REGRA DA TAG MANTIDA: Exibe apenas se a Tag do Field for IGUAL a FTagExportacao (ex: 0 = 0)
     if (vField.Tag = FTagExportacao) and vField.Visible then
     begin
       vColuna := FGrid.Columns.Add;
@@ -592,13 +597,16 @@ begin
       vLarguraTitulos[FGrid.Columns.Count - 1] := vLarguraTitulo;
     end;
   end;
-  FGrid.Canvas.Font.Style := [];
+
+  if FGrid.Columns.Count = 0 then Exit;
 
   SetLength(vLarguraColunas, FGrid.Columns.Count);
   for vIndiceColuna := 0 to FGrid.Columns.Count - 1 do
     vLarguraColunas[vIndiceColuna] := vLarguraTitulos[vIndiceColuna];
 
-  if not vDataSet.IsEmpty then
+  // 2. Mede a amostra de dados
+  FGrid.Canvas.Font.Style := [];
+  if vDataSet.Active and (not vDataSet.IsEmpty) then
   begin
     vDataSet.DisableControls;
     vBookmark := vDataSet.Bookmark;
@@ -629,17 +637,30 @@ begin
     end;
   end;
 
+  // 3. Aplica a largura final garantindo que o DisplayWidth (ex: 50 do NOME) seja respeitado
+  vAvgCharWidth := (FGrid.Canvas.TextWidth('0123456789') div 10);
+
   for vIndiceColuna := 0 to FGrid.Columns.Count - 1 do
   begin
+    vColuna := FGrid.Columns[vIndiceColuna];
     vLarguraTitulo := vLarguraTitulos[vIndiceColuna];
-    vLarguraDados := vLarguraColunas[vIndiceColuna];
+    vLarguraDados  := vLarguraColunas[vIndiceColuna];
 
-    if vLarguraTitulo > vLarguraDados then
-      vLarguraFinal := vLarguraTitulo
-    else
+    vLarguraDisplay := 0;
+    if Assigned(vColuna.Field) and (vColuna.Field.DisplayWidth > 0) then
+    begin
+      // Calcula a largura equivalente ao DisplayWidth do TField + margem
+      vLarguraDisplay := (vColuna.Field.DisplayWidth * vAvgCharWidth) + MARGEM_DADOS;
+    end;
+
+    // Define a maior largura entre Título, Amostra e DisplayWidth
+    vLarguraFinal := vLarguraTitulo;
+    if vLarguraDados > vLarguraFinal then
       vLarguraFinal := vLarguraDados;
+    if vLarguraDisplay > vLarguraFinal then
+      vLarguraFinal := vLarguraDisplay;
 
-    FGrid.Columns[vIndiceColuna].Width := vLarguraFinal;
+    vColuna.Width := vLarguraFinal;
   end;
 end;
 
@@ -729,6 +750,9 @@ begin
 
     FGrid.Canvas.Font.Color := clWindowText;
   end;
+
+  if Assigned(FOnDrawColumnCell) then
+    FOnDrawColumnCell(Sender, Rect, DataCol, Column, State);
 
   FGrid.DefaultDrawColumnCell(Rect, DataCol, Column, State);
 end;
