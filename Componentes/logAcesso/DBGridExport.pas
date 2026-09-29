@@ -58,9 +58,13 @@ type
     FTagExportacao: Integer;
     FAlturaExpandido: Integer;
 
+    // Guardador do procedimento original de mensagens da grid
+    FGridOldWndProc: TWndMethod;
+
     // Eventos personalizados
     FOnConsultar: TNotifyEvent;
     FOnDrawColumnCell: TDrawColumnCellEvent;
+    FOnGridDblClick: TNotifyEvent;
 
     procedure SetDataSource(const Value: TDataSource);
     procedure SetExibirExportarExcel(const Value: Boolean);
@@ -86,6 +90,7 @@ type
     procedure OnBtnToggleGridClick(Sender: TObject);
     procedure OnGridTitleClick(Column: TColumn);
     procedure OnGridDrawColumnCell(Sender: TObject; const Rect: TRect; DataCol: Integer; Column: TColumn; State: TGridDrawState);
+    procedure GridWndProc(var Message: TMessage);
     procedure OrdenarGrid(Column: TColumn);
     procedure ImprimirGrid;
     procedure AtualizarCaptionToggle;
@@ -131,6 +136,7 @@ type
     // Eventos
     property OnConsultar: TNotifyEvent read FOnConsultar write FOnConsultar;
     property OnDrawColumnCell: TDrawColumnCellEvent read FOnDrawColumnCell write FOnDrawColumnCell;
+    property OnGridDblClick: TNotifyEvent read FOnGridDblClick write FOnGridDblClick;
 
     property Align;
     property Anchors;
@@ -175,6 +181,8 @@ end;
 
 destructor TDBGridExport.Destroy;
 begin
+  if Assigned(FGrid) and Assigned(FGridOldWndProc) then
+    FGrid.WindowProc := FGridOldWndProc;
   inherited Destroy;
 end;
 
@@ -422,7 +430,25 @@ begin
   FGrid.OnTitleClick := OnGridTitleClick;
   FGrid.OnDrawColumnCell := OnGridDrawColumnCell;
 
+  // Intercepta as mensagens diretamente no controle de janelas da grid
+  FGridOldWndProc := FGrid.WindowProc;
+  FGrid.WindowProc := GridWndProc;
+
   AjustarVisibilidadeBotoes;
+end;
+
+procedure TDBGridExport.GridWndProc(var Message: TMessage);
+begin
+  // Processa normalmente as mensagens padrão da grid
+  if Assigned(FGridOldWndProc) then
+    FGridOldWndProc(Message);
+
+  // Captura mensagem do Windows de duplo clique com o botão esquerdo do rato
+  if Message.Msg = WM_LBUTTONDBLCLK then
+  begin
+    if Assigned(FOnGridDblClick) then
+      FOnGridDblClick(Self);
+  end;
 end;
 
 procedure TDBGridExport.AtualizarCaptionToggle;

@@ -387,4 +387,5 @@ begin
     APainel.EnableAlign;
   end;
 end;
+
 end.
